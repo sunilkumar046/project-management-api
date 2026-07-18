@@ -1,0 +1,6 @@
+$kind: collection
+name: project_management_api
+description: ""
+variables:
+  - key: json_web_token_0p0i
+    secret: true

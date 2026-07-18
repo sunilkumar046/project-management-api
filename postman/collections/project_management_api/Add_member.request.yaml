@@ -1,0 +1,9 @@
+$kind: http-request
+name: Add_member
+description: ""
+url: http://127.0.0.1:8000/projects/1/members
+method: POST
+body:
+  type: json
+  content: "{\r\n    \"user_id\": 1\r\n}"
+order: 4218994092049093
