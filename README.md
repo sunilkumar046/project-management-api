@@ -1,17 +1,8 @@
-# Project Management API with RBAC
+# Project Management API with Notification & Activity Tracking
 
 ## Overview
 
-This is a Project Management API built using FastAPI.
-
-The application allows users to:
-
-- Register and Login
-- Create and Manage Projects
-- Add Members to Projects
-- Create and Assign Tasks
-- Update Task Status
-- Manage Access using User Roles
+This project is a backend application developed using FastAPI that allows users to manage projects and tasks with Role-Based Access Control (RBAC). The application also includes JWT Authentication, Activity Logging, Notifications, and Audit Tracking.
 
 ---
 
@@ -19,58 +10,92 @@ The application allows users to:
 
 - Python
 - FastAPI
+- SQLAlchemy ORM
 - SQLite
-- SQLAlchemy
 - Pydantic
 - JWT Authentication
 - Passlib (bcrypt)
 
 ---
 
-## User Roles
+## Features
 
-### Admin
+### Authentication
+
+- User Registration
+- User Login
+- Password Hashing
+- JWT Token Authentication
+- Protected Routes
+
+### Role-Based Access Control (RBAC)
+
+#### Admin
 - Create Projects
 - Update Projects
 - Delete Projects
-- Assign Tasks
+- Manage Users
 - View All Projects and Tasks
 
-### Manager
+#### Manager
 - Create Projects
 - Assign Tasks
-- Manage Project Members
 - Update Projects
+- View Project Information
 
-### Member
+#### Member
 - View Assigned Tasks
 - Update Task Status
-- View Assigned Projects
 
 ---
 
-## Database Tables
+## Project Management
 
-### Users
-- id
-- full_name
-- email
-- password
-- role
+Implemented APIs for:
 
-### Projects
+- Create Project
+- View Projects
+- View Single Project
+- Update Project
+- Delete Project
+
+Project Fields:
+
 - id
 - name
 - description
 - created_by
 - created_at
 
-### Project Members
-- id
-- project_id
-- user_id
+---
 
-### Tasks
+## Project Membership
+
+Implemented APIs for:
+
+- Add Member to Project
+- View Project Members
+
+Relationship:
+
+- One Project can have multiple members
+- One User can belong to multiple projects
+
+---
+
+## Task Management
+
+Implemented APIs for:
+
+- Create Task
+- View Tasks
+- View Single Task
+- Update Task
+- Delete Task
+- Update Task Status
+
+Task Fields:
+
 - id
 - title
 - description
@@ -82,35 +107,119 @@ The application allows users to:
 
 ---
 
-## API Endpoints
+## Activity Logging System
 
-### Authentication
-- POST /auth/signup
-- POST /auth/login
-- GET /auth/me
+The application automatically tracks important user activities.
 
-### Projects
-- POST /projects
-- GET /projects
-- GET /projects/{id}
-- PUT /projects/{id}
-- DELETE /projects/{id}
+Activities Tracked:
 
-### Project Members
-- POST /projects/{id}/members
-- GET /projects/{id}/members
+- User Login
+- Project Creation
+- Task Creation
+- Task Status Change
 
-### Tasks
-- POST /tasks
-- GET /tasks
-- GET /tasks/{id}
-- PUT /tasks/{id}
-- DELETE /tasks/{id}
-- PUT /tasks/{id}/status
+Activity Log Fields:
+
+- id
+- user_id
+- action
+- entity_type
+- entity_id
+- description
+- created_at
+
+APIs:
+
+- GET /activities
+- GET /activities/user/{id}
 
 ---
 
-## Run Project
+## Notification System
+
+Notifications are automatically generated when important events occur.
+
+Implemented:
+
+- Task Assignment Notification
+
+Notification Features:
+
+- View Notifications
+- View Unread Notifications
+- Mark Notification as Read
+- Mark All Notifications as Read
+- Delete Notification
+
+Notification Fields:
+
+- id
+- user_id
+- title
+- message
+- is_read
+- created_at
+
+APIs:
+
+- GET /notifications
+- GET /notifications/unread
+- PUT /notifications/{id}/read
+- PUT /notifications/read-all
+- DELETE /notifications/{id}
+
+---
+
+## Audit Log System
+
+Maintains a history of important changes in the application.
+
+Implemented:
+
+- Task Status Change Tracking
+
+Example:
+
+Pending → In Progress → Completed
+
+Audit Log Fields:
+
+- id
+- entity_type
+- entity_id
+- field_name
+- old_value
+- new_value
+- changed_by
+- changed_at
+
+APIs:
+
+- GET /audit-logs
+
+---
+
+## Database Tables
+
+- users
+- projects
+- project_members
+- tasks
+- activity_logs
+- notifications
+- audit_logs
+
+---
+
+## API Documentation
+
+Swagger UI:
+
+http://127.0.0.1:8000/docs
+
+---
+
+## How to Run
 
 ### Create Virtual Environment
 
@@ -118,7 +227,7 @@ The application allows users to:
 python -m venv venv
 ```
 
-### Activate Environment
+### Activate Virtual Environment
 
 ```bash
 venv\Scripts\activate
@@ -130,13 +239,13 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### Run Server
+### Run Application
 
 ```bash
 uvicorn main:app --reload
 ```
 
-### Open Swagger UI
+### Open Swagger Documentation
 
 ```text
 http://127.0.0.1:8000/docs
@@ -144,6 +253,17 @@ http://127.0.0.1:8000/docs
 
 ---
 
-### Author
+## Deliverables
 
-Sunil Kumar
+- Source Code
+- Updated GitHub Repository
+- README Documentation
+- Database Schema Diagram
+- Swagger Screenshots
+- Postman Collection
+
+---
+
+## Conclusion
+
+This project demonstrates FastAPI backend development with Authentication, Authorization, Project Management, Task Management, Activity Tracking, Notifications, and Audit Logging using clean API design and database relationships.
