@@ -7,10 +7,18 @@ from sqlalchemy.orm import Session
 from dependencies import get_current_user
 import models
 import schemas
-
+from fastapi.security import OAuth2PasswordRequestForm
 from database import engine
 from database import get_db
-from models import User, Project, ProjectMember, Task
+from models import (
+    User,
+    Project,
+    ProjectMember,
+    Task,
+    Notification,
+    ActivityLog,
+    AuditLog
+)
 
 from security import hash_password
 from security import verify_password
@@ -70,43 +78,53 @@ def signup(
     }
 
 
+
+
 @app.post("/auth/login")
 def login(
-    user: schemas.UserLogin,
+    form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
 
     db_user = db.query(User).filter(
-        User.email == user.email
+        User.email == form_data.username
     ).first()
 
     if not db_user:
-
         raise HTTPException(
             status_code=401,
             detail="Invalid Email"
         )
 
     if not verify_password(
-        user.password,
+        form_data.password,
         db_user.password
     ):
-
         raise HTTPException(
             status_code=401,
             detail="Invalid Password"
         )
 
     token = create_access_token(
-        {
-            "sub": db_user.email
-        }
+        {"sub": db_user.email}
     )
 
+    # Activity Log
+    activity = ActivityLog(
+        user_id=db_user.id,
+        action="LOGIN",
+        entity_type="USER",
+        entity_id=db_user.id,
+        description="User Logged In"
+    )
+
+    db.add(activity)
+    db.commit()
+
     return {
-    "access_token": token,
-    "token_type": "bearer"
-}
+        "access_token": token,
+        "token_type": "bearer"
+    }
 
 @app.post("/projects")
 def create_project(
@@ -124,10 +142,19 @@ def create_project(
     )
 
     db.add(new_project)
-
     db.commit()
-
     db.refresh(new_project)
+
+    activity = ActivityLog(
+        user_id=current_user.id,
+        action="PROJECT_CREATED",
+        entity_type="PROJECT",
+        entity_id=new_project.id,
+        description=f"Project '{new_project.name}' created"
+    )
+
+    db.add(activity)
+    db.commit()
 
     return {
         "message": "Project Created"
@@ -214,49 +241,31 @@ def create_task(
     db.commit()
     db.refresh(new_task)
 
+    # Activity Log
+    activity = ActivityLog(
+        user_id=current_user.id,
+        action="TASK_CREATED",
+        entity_type="TASK",
+        entity_id=new_task.id,
+        description=f"Task '{new_task.title}' created"
+    )
+
+    db.add(activity)
+
+    # Notification
+    notification = Notification(
+        user_id=user.id,
+        title="New Task Assigned",
+        message=f"You have been assigned task '{new_task.title}'"
+    )
+
+    db.add(notification)
+
+    db.commit()
+
     return {
         "message": "Task Created"
     }
-@app.get("/projects")
-def get_projects(db: Session = Depends(get_db)):
-    return db.query(Project).all()
-
-
-@app.get("/projects/{project_id}")
-def get_project(
-    project_id: int,
-    db: Session = Depends(get_db)
-):
-    return db.query(Project).filter(
-        Project.id == project_id
-    ).first()
-
-@app.get("/users")
-def get_users(db: Session = Depends(get_db)):
-    return db.query(User).all()
-
-@app.get("/tasks")
-def get_tasks(db: Session = Depends(get_db)):
-    return db.query(Task).all()
-
-
-@app.get("/tasks/{task_id}")
-def get_task(
-    task_id: int,
-    db: Session = Depends(get_db)
-):
-    task = db.query(Task).filter(
-        Task.id == task_id
-    ).first()
-
-    if not task:
-        raise HTTPException(
-            status_code=404,
-            detail="Task not found"
-        )
-
-    return task
-
 
 @app.put("/tasks/{task_id}")
 def update_task(
@@ -369,6 +378,49 @@ def update_task_status(
             detail="Task not found"
         )
 
+    old_status = task.status
+
+    task.status = task_data.status
+
+    db.commit()
+
+    audit = AuditLog(
+        entity_type="TASK",
+        entity_id=task.id,
+        field_name="status",
+        old_value=old_status,
+        new_value=task_data.status,
+        changed_by=current_user.id
+    )
+
+    db.add(audit)
+    db.commit()
+
+    activity = ActivityLog(
+        user_id=current_user.id,
+        action="TASK_STATUS_CHANGED",
+        entity_type="TASK",
+        entity_id=task.id,
+        description=f"Status changed from {old_status} to {task_data.status}"
+    )
+
+    db.add(activity)
+    db.commit()
+
+    return {
+        "message": "Task Status Updated"
+    }
+
+    task = db.query(Task).filter(
+        Task.id == task_id
+    ).first()
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
+
     if task.assigned_to != current_user.id:
         raise HTTPException(
             status_code=403,
@@ -393,3 +445,100 @@ def get_project_members(
     ).all()
 
     return members
+
+@app.get("/notifications")
+def get_notifications(db: Session = Depends(get_db)):
+    return db.query(Notification).all()
+
+
+@app.put("/notifications/{id}/read")
+def mark_read(id: int, db: Session = Depends(get_db)):
+    notification = db.query(Notification).filter(
+        Notification.id == id
+    ).first()
+
+    notification.is_read = True
+
+    db.commit()
+
+    return {"message": "Notification Read"}
+
+
+@app.get("/activities")
+def get_activities(db: Session = Depends(get_db)):
+    return db.query(ActivityLog).all()
+
+
+@app.get("/activities/user/{user_id}")
+def get_user_activities(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    return db.query(ActivityLog).filter(
+        ActivityLog.user_id == user_id
+    ).all()
+
+
+@app.get("/audit-logs")
+def get_audit_logs(
+    db: Session = Depends(get_db)
+):
+    return db.query(AuditLog).all()
+
+
+
+@app.get("/notifications/unread")
+def get_unread_notifications(
+    db: Session = Depends(get_db)
+):
+    return db.query(Notification).filter(
+        Notification.is_read == False
+    ).all()
+
+
+
+@app.put("/notifications/read-all")
+def read_all_notifications(
+    db: Session = Depends(get_db)
+):
+
+    notifications = db.query(
+        Notification
+    ).all()
+
+    for notification in notifications:
+        notification.is_read = True
+
+    db.commit()
+
+    return {
+        "message": "All Notifications Read"
+    }
+
+
+
+
+@app.delete("/notifications/{id}")
+def delete_notification(
+    id: int,
+    db: Session = Depends(get_db)
+):
+
+    notification = db.query(
+        Notification
+    ).filter(
+        Notification.id == id
+    ).first()
+
+    if not notification:
+        raise HTTPException(
+            status_code=404,
+            detail="Notification not found"
+        )
+
+    db.delete(notification)
+    db.commit()
+
+    return {
+        "message": "Notification Deleted"
+    }

@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 
 from database import Base
+from sqlalchemy import Boolean
 
 
 class User(Base):
@@ -62,14 +63,8 @@ class ProjectMember(Base):
 class Task(Base):
     __tablename__ = "tasks"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True
-    )
-
+    id = Column(Integer, primary_key=True, index=True)
     title = Column(String)
-
     description = Column(String)
 
     status = Column(
@@ -89,4 +84,76 @@ class Task(Base):
     project_id = Column(
         Integer,
         ForeignKey("projects.id")
+    )
+
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id")
+    )
+
+    action = Column(String)
+
+    entity_type = Column(String)
+
+    entity_id = Column(Integer)
+
+    description = Column(String)
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index = True)
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id")
+    )
+
+    title = Column(String)
+
+    message = Column(String)
+
+    is_read = Column(
+        Boolean,
+        default=False
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index = True)
+
+    entity_type = Column(String)
+
+    entity_id = Column(Integer)
+
+    field_name = Column(String)
+
+    old_value = Column(String)
+
+    new_value = Column(String)
+
+    changed_by = Column(Integer)
+
+    changed_at = Column(
+        DateTime,
+        default=datetime.utcnow
     )

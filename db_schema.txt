@@ -1,0 +1,81 @@
++------------------+
+|      USERS       |
++------------------+
+| id (PK)          |
+| full_name        |
+| email            |
+| password         |
+| role             |
++------------------+
+          |
+          | created_by
+          |
+          v
++------------------+
+|    PROJECTS      |
++------------------+
+| id (PK)          |
+| name             |
+| description      |
+| created_by (FK)  |
+| created_at       |
++------------------+
+          |
+          |
+          +-------------------+
+          |                   |
+          v                   v
+
++------------------+    +------------------+
+| PROJECT_MEMBERS  |    |      TASKS       |
++------------------+    +------------------+
+| id (PK)          |    | id (PK)          |
+| project_id (FK)  |    | title            |
+| user_id (FK)     |    | description      |
++------------------+    | status           |
+                        | priority         |
+                        | due_date         |
+                        | assigned_to (FK) |
+                        | project_id (FK)  |
+                        +------------------+
+                                 |
+                                 |
+                                 v
+
+                        +------------------+
+                        |  NOTIFICATIONS   |
+                        +------------------+
+                        | id (PK)          |
+                        | user_id (FK)     |
+                        | title            |
+                        | message          |
+                        | is_read          |
+                        | created_at       |
+                        +------------------+
+
+
++------------------+
+| ACTIVITY_LOGS    |
++------------------+
+| id (PK)          |
+| user_id (FK)     |
+| action           |
+| entity_type      |
+| entity_id        |
+| description      |
+| created_at       |
++------------------+
+
+
++------------------+
+|   AUDIT_LOGS     |
++------------------+
+| id (PK)          |
+| entity_type      |
+| entity_id        |
+| field_name       |
+| old_value        |
+| new_value        |
+| changed_by       |
+| changed_at       |
++------------------+

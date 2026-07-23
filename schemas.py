@@ -55,3 +55,24 @@ class TaskUpdate(BaseModel):
 
 class TaskStatusUpdate(BaseModel):
     status: str
+
+
+class NotificationResponse(BaseModel):
+    id: int
+    title: str
+    message: str
+    is_read: bool
+
+class ActivityResponse(BaseModel):
+    id: int
+    action: str
+    entity_type: str
+    description: str
+    created_at: datetime
+
+class AuditLogResponse(BaseModel):
+    id: int
+    entity_type: str
+    field_name: str
+    old_value: str | None
+    new_value: str | None
